@@ -1,0 +1,17 @@
+import java.io.*;
+import java.util.zip.*;
+
+File osgiJar = new File( basedir, "target/product/eclipse/plugins/org.eclipse.osgi_3.5.2.R35x_v20100126.jar" ); 
+ZipFile osgiZip = new ZipFile(osgiJar);
+
+ZipEntry rsaEntry = osgiZip.getEntry("META-INF/ECLIPSEF.RSA");
+if (rsaEntry.getCrc() != 3899771450L) {
+	throw new Exception("Key file modified in already signed jar");
+}
+
+ZipEntry sfEntry = osgiZip.getEntry("META-INF/ECLIPSEF.SF");
+if (sfEntry.getCrc() != 3090645131L) {
+	throw new Exception("Signature file modified in already signed jar");
+}
+
+return true;

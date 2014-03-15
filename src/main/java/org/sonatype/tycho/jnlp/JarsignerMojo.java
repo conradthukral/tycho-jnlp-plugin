@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -144,7 +146,7 @@ public class JarsignerMojo
                     {
                         try
                         {
-                            signFile( archive );
+                            signFileIfNecessary( archive );
                         }
                         catch ( MojoExecutionException e )
                         {
@@ -168,7 +170,7 @@ public class JarsignerMojo
                     {
                         try
                         {
-                            signFile( archive );
+                            signFileIfNecessary( archive );
                         }
                         catch ( MojoExecutionException e )
                         {
@@ -186,11 +188,44 @@ public class JarsignerMojo
         }
     }
 
+    void signFileIfNecessary( File archive )
+            throws MojoExecutionException
+    {
+        if ( isAlreadySigned(archive) )
+        {
+            getLog().info( "Skipping jarsigner for already-signed jar " + archive.getAbsolutePath() );
+        }
+        else
+        {
+            getLog().info( "Executing jarsigner on " + archive.getAbsolutePath() );
+            signFile( archive );
+        }
+    }
+
+    private boolean isAlreadySigned(File archive) throws MojoExecutionException
+    {
+        try
+        {
+            ZipFile zipFile = new ZipFile( archive );
+            try
+            {
+                ZipEntry existingSignatureFile = zipFile.getEntry( String.format( "META-INF/%s.SF", sigfile ) );
+                return existingSignatureFile != null;
+            }
+            finally
+            {
+                zipFile.close();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new MojoExecutionException( "Could not determine whether file was already signed", e );
+        }
+    }
+    
     void signFile( File archive )
         throws MojoExecutionException
     {
-        getLog().info( "Executing jarsigner on " + archive.getAbsolutePath() );
-
         Commandline commandLine = new Commandline();
 
         commandLine.setExecutable( this.executable );
